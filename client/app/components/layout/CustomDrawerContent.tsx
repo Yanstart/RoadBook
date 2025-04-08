@@ -1,224 +1,197 @@
-// client/app/components/layout/CustomDrawerContent.tsx
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Image } from 'react-native';
+// app/components/layout/CustomDrawerContent.tsx
+import React, { useMemo } from 'react';
+import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useTheme, ThemeColors } from '../../constants/theme';
 import { DrawerContentScrollView } from '@react-navigation/drawer';
-import { useRouter } from 'expo-router';
-import { useAuth } from '../../context/AuthContext';
-import { useTheme } from '../../constants/theme';
+import { Ionicons } from '@expo/vector-icons';
+import { useRouter, usePathname } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-// Fonction utilitaire pour créer un élément de menu
-const DrawerItem = ({ label, onPress, active = false, colors }) => (
-  <TouchableOpacity
-    style={[
-      styles.drawerItem,
-      active && { backgroundColor: colors.primary + '20' }, // 20% opacity
-    ]}
-    onPress={onPress}
-  >
-    <Text style={[styles.drawerItemText, { color: active ? colors.primary : colors.text }]}>
-      {label}
-    </Text>
-  </TouchableOpacity>
-);
+// Remove the unused Platform import
 
-// Composant principal du tiroir personnalisé
-export default function CustomDrawerContent(props) {
+const CustomDrawerContent = (props) => {
   const router = useRouter();
+  const pathname = usePathname();
+  const insets = useSafeAreaInsets();
   const { colors } = useTheme();
-  const { user, logout } = useAuth();
+  const styles = useMemo(() => createStyles(colors), [colors]);
 
-  // Obtenir le chemin actuel pour mettre en évidence l'élément actif
-  const currentRoute = props.state?.routes[props.state.index]?.name || '';
+  // Helper to check active route
+  const isActive = (path) => pathname === path;
 
-  // Fonction pour naviguer vers une route
-  const navigateTo = (route) => {
-    props.navigation.closeDrawer();
-    router.push(route);
+  // Group drawer items for better organization
+  const mainItems = [
+    { name: 'Dashboard', icon: 'grid-outline', route: '/DashboardScreen' },
+    { name: 'My Roadbook', icon: 'book-outline', route: '/MyRoadbookScreen' },
+    { name: 'My Routes', icon: 'map-outline', route: '/MyRoutesScreen' },
+  ];
+
+  const communityItems = [
+    { name: 'Community', icon: 'people-outline', route: '/CommunityScreen' },
+    { name: 'Mentors', icon: 'person-add-outline', route: '/MentorsScreen' },
+    { name: 'Skills', icon: 'ribbon-outline', route: '/SkillsScreen' },
+    { name: 'Marketplace', icon: 'cart-outline', route: '/MarketplaceScreen' },
+  ];
+
+  const settingsItems = [
+    { name: 'Paramètres', icon: 'settings-outline', route: '/SettingsScreen' },
+    { name: 'Confidentialité', icon: 'shield-outline', route: '/PrivacyScreen' },
+    { name: 'Partager', icon: 'share-social-outline', route: '/ShareScreen' },
+    { name: 'Aide', icon: 'help-circle-outline', route: '/HelpScreen' },
+  ];
+
+  const handleLogout = () => {
+    // Add logout logic here
+    console.log('Logging out...');
+    router.replace('/login');
   };
 
-  return (
-    <DrawerContentScrollView
-      {...props}
-      contentContainerStyle={{ flex: 1 }}
-      style={{ backgroundColor: colors.background }}
+  const renderDrawerItem = (item) => (
+    <TouchableOpacity
+      key={item.route}
+      style={[styles.drawerItem, isActive(item.route) && styles.activeItem]}
+      onPress={() => router.push(item.route)}
     >
-      {/* En-tête du tiroir avec les infos de l'utilisateur */}
-      <View style={[styles.drawerHeader, { backgroundColor: colors.primary }]}>
-        <View style={styles.userInfoContainer}>
-          <Image
-            source={{ uri: user?.profilePicture || 'https://via.placeholder.com/100' }}
-            style={styles.userAvatar}
-          />
-          <View>
-            <Text style={[styles.userName, { color: colors.white }]}>
-              {user?.displayName || 'Utilisateur'}
-            </Text>
-            <Text style={[styles.userEmail, { color: colors.white + 'CC' }]}>
-              {user?.email || 'email@example.com'}
-            </Text>
-          </View>
-        </View>
-      </View>
-
-      {/* Liste des éléments de menu */}
-      <ScrollView style={styles.drawerContent}>
-        <DrawerItem
-          label="Accueil"
-          onPress={() => navigateTo('/(tabs)')}
-          active={currentRoute === '(tabs)'}
-          colors={colors}
-        />
-        <DrawerItem
-          label="Dashboard"
-          onPress={() => navigateTo('/DashboardScreen')}
-          active={currentRoute === 'DashboardScreen'}
-          colors={colors}
-        />
-        <DrawerItem
-          label="Mon Carnet"
-          onPress={() => navigateTo('/MyRoadbookScreen')}
-          active={currentRoute === 'MyRoadbookScreen'}
-          colors={colors}
-        />
-        <DrawerItem
-          label="Mes trajets"
-          onPress={() => navigateTo('/MyRoutesScreen')}
-          active={currentRoute === 'MyRoutesScreen'}
-          colors={colors}
-        />
-
-        <View style={styles.divider} />
-
-        <Text style={[styles.sectionTitle, { color: colors.text + '99' }]}>Communauté</Text>
-        <DrawerItem
-          label="Communauté"
-          onPress={() => navigateTo('/CommunityScreen')}
-          active={currentRoute === 'CommunityScreen'}
-          colors={colors}
-        />
-        <DrawerItem
-          label="Mentors"
-          onPress={() => navigateTo('/MentorsScreen')}
-          active={currentRoute === 'MentorsScreen'}
-          colors={colors}
-        />
-        <DrawerItem
-          label="Compétences"
-          onPress={() => navigateTo('/SkillsScreen')}
-          active={currentRoute === 'SkillsScreen'}
-          colors={colors}
-        />
-        <DrawerItem
-          label="Marketplace"
-          onPress={() => navigateTo('/MarketplaceScreen')}
-          active={currentRoute === 'MarketplaceScreen'}
-          colors={colors}
-        />
-
-        <View style={styles.divider} />
-
-        <Text style={[styles.sectionTitle, { color: colors.text + '99' }]}>Paramètres</Text>
-        <DrawerItem
-          label="Profil"
-          onPress={() => navigateTo('/ProfileScreen')}
-          active={currentRoute === 'ProfileScreen'}
-          colors={colors}
-        />
-        <DrawerItem
-          label="Paramètres"
-          onPress={() => navigateTo('/SettingsScreen')}
-          active={currentRoute === 'SettingsScreen'}
-          colors={colors}
-        />
-        <DrawerItem
-          label="Aide"
-          onPress={() => navigateTo('/HelpScreen')}
-          active={currentRoute === 'HelpScreen'}
-          colors={colors}
-        />
-        <DrawerItem
-          label="À propos"
-          onPress={() => navigateTo('/AboutUsScreen')}
-          active={currentRoute === 'AboutUsScreen'}
-          colors={colors}
-        />
-      </ScrollView>
-
-      {/* Bouton de déconnexion en bas */}
-      <View style={styles.logoutContainer}>
-        <TouchableOpacity
-          style={[styles.logoutButton, { backgroundColor: colors.error + '20' }]}
-          onPress={logout}
-        >
-          <Text style={[styles.logoutText, { color: colors.error }]}>Déconnexion</Text>
-        </TouchableOpacity>
-      </View>
-    </DrawerContentScrollView>
+      <Ionicons
+        name={item.icon}
+        size={22}
+        color={isActive(item.route) ? colors.activeItem : colors.inactiveItem}
+      />
+      <Text style={[styles.drawerItemLabel, isActive(item.route) && styles.activeItemLabel]}>
+        {item.name}
+      </Text>
+    </TouchableOpacity>
   );
-}
 
-const styles = StyleSheet.create({
-  drawerHeader: {
-    padding: 16,
-    paddingTop: 48,
-    paddingBottom: 24,
-  },
-  userInfoContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  userAvatar: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    marginRight: 12,
-  },
-  userName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-  userEmail: {
-    fontSize: 14,
-  },
-  drawerContent: {
-    flex: 1,
-    paddingTop: 8,
-  },
-  drawerItem: {
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    marginHorizontal: 8,
-    borderRadius: 8,
-  },
-  drawerItemText: {
-    fontSize: 16,
-  },
-  divider: {
-    height: 1,
-    backgroundColor: '#e0e0e0',
-    marginVertical: 8,
-    marginHorizontal: 16,
-  },
-  sectionTitle: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
-    marginLeft: 16,
-    marginTop: 8,
-    marginBottom: 4,
-  },
-  logoutContainer: {
-    padding: 16,
-    borderTopWidth: 1,
-    borderTopColor: '#e0e0e0',
-  },
-  logoutButton: {
-    padding: 12,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  logoutText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-  },
-});
+  return (
+    <View style={[styles.container, { paddingBottom: insets.bottom }]}>
+      {/* Header */}
+      <View style={[styles.header, { paddingTop: insets.top + 16 }]}>
+        <Text style={styles.menuText}>RoadBook Tracker</Text>
+      </View>
+
+      <DrawerContentScrollView {...props} contentContainerStyle={styles.drawerContent}>
+        {/* Main Items Section */}
+        <View style={styles.section}>{mainItems.map(renderDrawerItem)}</View>
+
+        {/* Community Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionHeaderText}>Communauté</Text>
+          </View>
+          {communityItems.map(renderDrawerItem)}
+        </View>
+
+        {/* Settings Section */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionHeaderText}>Réglages</Text>
+          </View>
+          {settingsItems.map(renderDrawerItem)}
+        </View>
+
+        {/* Logout option */}
+        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
+          <Ionicons name="log-out-outline" size={22} color={colors.red} />
+          <Text style={styles.logoutText}>Se déconnecter</Text>
+        </TouchableOpacity>
+      </DrawerContentScrollView>
+
+      {/* Footer */}
+      <TouchableOpacity style={styles.aboutButton} onPress={() => router.push('/AboutUsScreen')}>
+        <Ionicons name="people" size={20} color={colors.primaryDarker} />
+        <Text style={styles.aboutText}>À propos de nous</Text>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+const createStyles = (colors: ThemeColors) =>
+  StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: colors.background,
+    },
+    header: {
+      paddingHorizontal: 24,
+      paddingVertical: 16,
+      backgroundColor: colors.background,
+      borderBottomWidth: 1,
+      borderBottomColor: colors.border,
+    },
+    menuText: {
+      color: colors.backgroundText,
+      fontSize: 20,
+      fontWeight: 'bold',
+    },
+    drawerContent: {
+      paddingTop: 10,
+    },
+    section: {
+      marginBottom: 10,
+    },
+    sectionHeader: {
+      paddingHorizontal: 16,
+      paddingVertical: 8,
+      marginTop: 10,
+      borderTopWidth: 0.5,
+      borderTopColor: colors.border,
+    },
+    sectionHeaderText: {
+      color: '#fff',
+      fontSize: 12,
+      fontWeight: 'bold',
+      textTransform: 'uppercase',
+      letterSpacing: 1,
+    },
+    drawerItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 12,
+      paddingHorizontal: 16,
+    },
+    activeItem: {
+      backgroundColor: colors.background,
+      borderLeftWidth: 3,
+      borderLeftColor: colors.activeItem,
+    },
+    drawerItemLabel: {
+      color: colors.inactiveItem,
+      fontSize: 16,
+      marginLeft: 32,
+    },
+    activeItemLabel: {
+      color: '#fff',
+      fontWeight: '500',
+    },
+    logoutButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingVertical: 15,
+      paddingHorizontal: 16,
+      marginTop: 20,
+      borderTopWidth: 0.5,
+      borderTopColor: colors.border,
+    },
+    logoutText: {
+      color: colors.red,
+      marginLeft: 32,
+      fontSize: 16,
+    },
+    aboutButton: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      padding: 16,
+      borderTopWidth: 0.5,
+      borderTopColor: colors.border,
+    },
+    aboutText: {
+      color: colors.inactiveItem,
+      fontSize: 14,
+      textAlign: 'center',
+      marginLeft: 8,
+    },
+  });
+
+export default CustomDrawerContent;
