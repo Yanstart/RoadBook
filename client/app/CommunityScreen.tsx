@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView, Touchable } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useNavigation } from '@react-navigation/native';  // Importation du hook de navigation
 import 'react-native-gesture-handler';
@@ -68,6 +68,11 @@ const BlackScreen: React.FC = () => {
           />
         ))}
       </ScrollView>
+
+      {/* ajout d'un second bouton */}
+      <TouchableOpacity style={styles.file_actu_boutton} onPress={() => navigation.navigate('file_actu')}>
+        <Text style={styles.file_actu}>Fil actualité</Text>
+      </TouchableOpacity>
     </View>
   );
 };
@@ -104,6 +109,17 @@ const styles = StyleSheet.create({
     fontSize: 14,
     marginTop: 5,
   },
+  file_actu_boutton : {
+    backgroundColor: 'red',
+    padding : 10,
+    width : 100,
+    borderRadius : 10,
+  },
+
+  file_actu : {
+    color : 'white',
+    textAlign : 'center',
+  }
 });
 
 export default BlackScreen;

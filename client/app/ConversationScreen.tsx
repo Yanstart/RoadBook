@@ -6,7 +6,7 @@ import { ScrollView, TextInput } from 'react-native-gesture-handler';
 
 const ConversationScreen: React.FC = () => {
     const route = useRoute();
-    const { contactName, contactMessages } = route.params;
+    const { contactName = 'Nom inconnu', contactMessages = [] } = route.params || {};
     const [messageTexte, setMessageTexte] = useState('');
     const [messages, setMessages] = useState(contactMessages); // la liste de tout les message, fct pour modifier la liste
 
