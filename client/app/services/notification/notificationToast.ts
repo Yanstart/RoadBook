@@ -73,6 +73,7 @@ export const useNotification = () => {
       soundEnabled?: boolean;
       visibilityTime?: number;
     }
+  
   ) => {
     Toast.show({
       type,

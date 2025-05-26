@@ -29,6 +29,24 @@ export interface SessionComment {
  */
 export const sessionApi = {
   /**
+   * Récupérer toutes les sessions de l'utilisateur
+   */
+  getUserSessions: async (roadbookId: string): Promise<SessionData[]> => {
+    try {
+      const response = await apiClient.get(`/roadbooks/${roadbookId}/sessions`);
+      return extractApiData<SessionData[]>(response);
+    } catch (error) {
+      if (error.response?.status === 404) {
+        throw new Error('Aucune session trouvée pour ce roadbook.');
+      } else if (!error.response) {
+        throw new Error('Impossible de se connecter au serveur.');
+      }
+      logger.error('Erreur lors de la récupération des sessions utilisateur :', error);
+      throw error;
+    }
+  },
+
+  /**
    * Récupérer une session par son ID
    */
   getSessionById: async (sessionId: string): Promise<SessionData> => {

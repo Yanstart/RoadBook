@@ -1,77 +1,90 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useTheme, ThemeColors } from '../../constants/theme';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from '@react-navigation/native';
-import { useCallback } from 'react';
+import { sessionApi } from '../../services/api';
 
-interface DistanceProgressBarProps {
-  title: string;
-  distanceKm: number;
-}
-
-const DistanceProgressBar: React.FC<DistanceProgressBarProps> = ({ title, distanceKm }) => {
+const HoursProgressBar = () => {
+  const [totalDistance, setTotalDistance] = useState<number>(0);
   const router = useRouter();
   const { colors } = useTheme();
   const styles = useMemo(() => createStyles(colors), [colors]);
 
-  const [goalKm, setGoalKm] = useState<number | null>(null);
-  const [goalDate, setGoalDate] = useState<string | null>(null);
+  const [goalHours, setGoalHours] = useState<number | null>(null);
+  const [totalHoursDone, setTotalHoursDone] = useState<number>(0);
+  const [goalKm, setGoalKm] = useState<string | null>(null);
+
+  const [deadline, setDeadline] = useState<Date | null>(null);
+
+  const distanceProgress = useMemo(() => {
+    const numericGoalKm = goalKm ? parseFloat(goalKm) : 0;
+    if (!numericGoalKm || numericGoalKm === 0) return 0;
+    return Math.min((totalDistance / numericGoalKm) * 100, 100);
+  }, [goalKm, totalDistance]);
 
   useFocusEffect(
     useCallback(() => {
-      const loadGoal = async () => {
-        const storedKm = await AsyncStorage.getItem('goalKm');
-        const storedDate = await AsyncStorage.getItem('goalDate');
-        if (storedKm) setGoalKm(Number(storedKm));
-        if (storedDate) setGoalDate(storedDate);
+      const fetchData = async () => {
+        try {
+          const roadbookId = 'a6222aae-f8aa-4aa9-9fb4-6b3be9385221';
+          const sessions = await sessionApi.getUserSessions(roadbookId);
+
+          const total = sessions.reduce((sum: number, session: any) => sum + (session.duration || 0), 0);
+          const totalDist = sessions.reduce((sum: number, session: any) => sum + (session.distance || 0), 0);
+
+          setTotalHoursDone(total);
+          setTotalDistance(totalDist);
+
+          const storedGoalHours = await AsyncStorage.getItem('goalHours');
+          if (storedGoalHours) setGoalHours(Number(storedGoalHours));
+
+          const storedGoalKm = await AsyncStorage.getItem('goalKm');
+          if (storedGoalKm) setGoalKm(storedGoalKm);
+
+          const storedGoalDate = await AsyncStorage.getItem('goalDate'); 
+          if (storedGoalDate) setDeadline(new Date(storedGoalDate));
+
+        } catch (error) {
+          console.error('Erreur lors du chargement des sessions ou objectifs:', error);
+        }
       };
 
-      loadGoal();
+      fetchData();
     }, [])
   );
 
   const progress = useMemo(() => {
-    if (!goalKm || goalKm === 0) return 0;
-    return Math.min((distanceKm / goalKm) * 100, 100);
-  }, [distanceKm, goalKm]);
-
-  const remainingDays = useMemo(() => {
-    if (!goalDate) return null;
-    const deadlineDate = new Date(goalDate);
-    return Math.max(
-      0,
-      Math.ceil((deadlineDate.getTime() - new Date().getTime()) / (1000 * 60 * 60 * 24))
-    );
-  }, [goalDate]);
+    if (!goalHours || goalHours === 0) return 0;
+    return Math.min((totalHoursDone / goalHours) * 100, 100);
+  }, [goalHours, totalHoursDone]);
 
   return (
     <TouchableOpacity onPress={() => router.push('/objectives')} activeOpacity={0.8}>
       <View style={styles.card}>
-        <Text style={styles.cardTitle}>{title}</Text>
+        <Text style={styles.cardTitle}>Progression</Text>
 
         <View style={styles.progressContainer}>
           <View style={styles.progressBackground}>
-            <View style={[styles.progressFill, { width: `${progress}%` }]} />
+            <View style={[styles.progressFill, { width: `${distanceProgress}%` }]} />
           </View>
           <View style={styles.percentageBubble}>
-            <Text style={styles.percentageText}>{Math.round(progress)}%</Text>
+            <Text style={styles.percentageText}>{Math.round(distanceProgress)}%</Text>
           </View>
         </View>
 
         <Text style={styles.distanceText}>
-          {distanceKm} km parcourus {goalKm ? `/ ${goalKm} km` : ''}
+          🚗 Distance parcourue : {(totalDistance || 0).toFixed(1)} km / {goalKm} km
+        </Text>
+        <Text style={styles.distanceText}>
+          {totalHoursDone} h effectuées {goalHours ? `/ ${goalHours} h` : ''}
         </Text>
 
-        {goalKm && <Text style={styles.goalText}>🎯 Objectif : {goalKm} km</Text>}
-        {goalDate && (
-          <Text style={styles.goalText}>
-            📅 Jusqu’au : {new Date(goalDate).toLocaleDateString()}
-          </Text>
-        )}
-        {remainingDays !== null && (
-          <Text style={styles.goalText}>⏳ Temps restant : {remainingDays} jours</Text>
+        {goalHours && <Text style={styles.goalText}>🎯 Objectif : {goalHours} heures</Text>}
+
+        {deadline && (
+          <Text style={styles.deadlineText}>📅 Date limite : {deadline.toLocaleDateString()}</Text>
         )}
       </View>
     </TouchableOpacity>
@@ -132,7 +145,7 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: 14,
     },
     distanceText: {
-      marginTop: 30,
+      marginTop: 25,
       textAlign: 'center',
       fontSize: 14,
       color: colors.primaryText,
@@ -143,6 +156,13 @@ const createStyles = (colors: ThemeColors) =>
       fontSize: 14,
       color: colors.primaryText,
     },
+    deadlineText: {
+      marginTop: 10,
+      textAlign: 'center',
+      fontSize: 13,
+      color: colors.primaryText,
+      fontStyle: 'italic',
+    },
   });
 
-export default DistanceProgressBar;
+export default HoursProgressBar;
